@@ -1,7 +1,7 @@
 import getpass
 
-radr = input("Adrees to log int to") # Email para checar e enviar mensagens
-smtpserver = onput("SMTP server domain: ") #Servidor smpt da conta
+radr = input("Adresses to log in to: ") # Email para checar e enviar mensagens
+smtpserver = input("SMTP server domain: ") #Servidor smpt da conta
 smtpserverport = input("SMTP server port [587]: ") # Porta do servidor SMTP 
 
 if not smtpserverport or smtpserverport == "":
