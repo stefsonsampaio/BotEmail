@@ -1,19 +1,20 @@
+# A biblioteca SMTP é utilizada para enviar e-mails
 import smtplib
 
-server = smtplib.SMTP('imap.gmail.com', 587)
+# Setando configurações do servidor SMTP
+server = smtplib.SMTP('smtp.gmail.com', 587)
 server.starttls()
-server.ehlo()
 server.login('botmailunilink@gmail.com', 'fhpgvqamrqrbpijw')
 
-text = """Primeiro teste concluído,
-Um e-mail foi enviado com sucesso! 
-
--Stefson
 """
-msg = smtplib.email.message.EmailMessage()
-msg['from'] = 'botmailunilink@gmail.com'
-msg["to"] = 'stefsonsampaio01@gmail.com'
-msg["Subject"] = "Teste, projeto BotMail Unilink! "
-msg.set_content(text)
-res = server.send_message(msg)
+# Configurando o email que será enviado
+from_email = 'seu_email@gmail.com'
+to_email = 'email_destinatario@example.com'
+subject = 'Assunto do e-mail'
+message = 'Conteúdo do e-mail'
 
+msg = f'Subject: {subject}\n\n{message}'
+"""
+
+server.sendmail(from_email, to_email, msg)
+server.quit()
