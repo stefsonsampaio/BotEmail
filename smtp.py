@@ -6,15 +6,15 @@ server = smtplib.SMTP('smtp.gmail.com', 587)
 server.starttls()
 server.login('botmailunilink@gmail.com', 'fhpgvqamrqrbpijw')
 
-"""
+
 # Configurando o email que será enviado
-from_email = 'seu_email@gmail.com'
-to_email = 'email_destinatario@example.com'
+from_email = 'botmailunilink@gmail.com'
+to_email = 'suporte2@unilinktransportes.com.br'
 subject = 'Assunto do e-mail'
-message = 'Conteúdo do e-mail'
+message = 'Conteudo do e-mail'
 
 msg = f'Subject: {subject}\n\n{message}'
-"""
+
 
 server.sendmail(from_email, to_email, msg)
 server.quit()
