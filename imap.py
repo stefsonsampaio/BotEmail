@@ -10,91 +10,57 @@ from email import message
 from email.header import decode_header
 
 
-# Vendo na lista de log, quantos e-mails tinha na ultima vez que o programa rodou
-# TODO : Se agora tiver mais emails que a ultima linha do log, rodas o programa de envio de resposta.
+# checking the e-mail count from the lastest e-mail count
 with open('BotEmail\log.txt', 'r') as file:
-    linha = file.readlines()
+    # this object receive the last e-mail count value
+    last_email_count = int(file.readlines()[-1].strip())
     file.close()
 
-# Esse objeto recebe o valor da ultima linha do arquivo log
-ultima_linha = int(linha[-1].strip())
-
+# oppening the imap server
 mail = imaplib.IMAP4_SSL('imap.gmail.com')
 mail.login('botmailunilink@gmail.com', 'fhpgvqamrqrbpijw')
 
-# gerando uma lista com os ids dos emails
-mail.list()
-
-# selecionando caixa de entrada
-status, count = mail.select(mailbox='inbox', readonly=True) 
-
-# armazenando a quantidade de emails
-total = int(count[0])
+# checking currently e-mail count
+mail.select(mailbox='inbox', readonly=True)
+status, count = mail.status('INBOX', "(MESSAGES)")
+total_emails = int(count[0].decode("utf-8").split()[2][:-1])
 mail.mesg_conversion = False
 
-# pesquisando por 'TUDO', None significar que não quero filtrar nada
-result, mail_id = mail.search(None, 'ALL') 
+# If there's new messagens, then proceed : 
+if total_emails > last_email_count:
+    for num in range(last_email_count+1, total_emails+1):
+        result, data = mail.fetch(str(num), '(RFC822)')
+        raw_email = data[0][1]
+        email_message = email.message_from_bytes(raw_email)
 
-# TODO: Se a ultima linha do arquivo log indicar que temos um novo email, o asked_for permite que recebamos os valores de destinatario e etc
-asked_for = False
-if total > ultima_linha:
-    asked_for = True
-    print("Mensagem de resposta enviada.")
-else:
-    print("Nenhuma mensagem foi enviada.")
+        # Get the sender, subject, and body of the email
+        sender = email.utils.parseaddr(email_message['From'])[1]
+        subject = decode_header(email_message['Subject'])[0][0].decode()
+        body = ''
 
-if asked_for == True:
-    for num in mail_id[0].split():
-        resultado, dados = mail.fetch(num, '(RFC822)')
-        
-        # obtendo o corpo da mensagem
-        message = email.message_from_bytes(dados[0][1])
-
-        # obtendo o remetente
-        sender = utils.parseaddr(message['From'])[1]
-
-        # obtendo o assunto
-        subject = decode_header(message['Subject'])[0][0]
-
-        # decodificando o corpo da mensagem
-        if message.is_multipart():
-            for part in message.walk():
+        if email_message.is_multipart():
+            for part in email_message.walk():
                 content_type = part.get_content_type()
                 if content_type == 'text/plain':
                     body = part.get_payload(decode=True).decode('utf-8')
+        else:
+            body = email_message.get_payload(decode=True).decode('utf-8')
 
-        """""""""
-        # imprimindo a informação do e-mail
-        print('De : ', sender)
-        print('Assunto : ', subject)
-        print('Corpo : ', body)
-        print('--------------------------')
-        """""""""
-# Salvando memória
-mail.close()
+        # Compose the reply email
+        reply_email = email.message.EmailMessage()
+        reply_email['From'] = 'botmailunilink@gmail.com'
+        reply_email['To'] = sender
+        reply_email['Subject'] = f"Re: {subject}"
+        reply_email['In-Reply-To'] = email_message['Message-ID']
+        reply_email['References'] = email_message['Message-ID']
+        reply_email.set_content('Olá, recebemos sua mensagem. Por favor, solicito para que aguarde o retorno do responsável, para que possamos responder suas perguntas.')
 
-if asked_for == True:
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    server.starttls()
-    server.login('botmailunilink@gmail.com', 'fhpgvqamrqrbpijw')
+        # Send the reply email
+        with smtplib.SMTP('smtp.gmail.com', 587) as smtp_server:
+            smtp_server.starttls()
+            smtp_server.login('botmailunilink@gmail.com', 'fhpgvqamrqrbpijw')
+            smtp_server.send_message(reply_email)
 
-    ##Configurando o email que será enviado
-    from_email = 'botmailunilink@gmail.com'
-    to_email = sender
-    assunto = 'Resposta padrão'
-    resposta = 'Olá, recebemos sua mensagem. Por favor, solicito para que aguarde o retorno do responsável, para que possamos responder suas perguntas.'
-
-    email_resposta = f'Subject: {assunto}\n\n{resposta}'
-
-    server.sendmail(from_email, to_email, email_resposta.format(to_email, from_email, resposta).encode('utf-8'))
-
-    # Salvando memória
-    server.quit()
-
-
-# Essa função foi criada para armazenar quantos e-mails tinham na caixa de entrada na ultima vez que o programa rodou
-# Objetivo : Com file.read, eu descubro quando o email receber novos emails e assim consigo gerar uma condição para responder o e-mail
-with open('BotEmail\log.txt', 'a') as file:
-    file.write(str(total))
-    file.write("\n")
-    file.close()
+    # Update the log file with the latest email count
+    with open('BotEmail\log.txt', 'a') as log_file:
+        log_file.write(f"{total_emails}\n")
