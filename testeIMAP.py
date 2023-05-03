@@ -1,38 +1,86 @@
+import smtplib
+
+# IMAP configuration
 import imaplib
 import email
-import smtplib
-from email.mime.text import MIMEText
+import os
+import base64
+from email import utils
+from email import message
+from email.header import decode_header
 
-# Configuração IMAP server para receber e-mails
+# PDF sender configuration
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
+
+# checking the e-mail count from the lastest e-mail count
+with open('BotEmail\log.txt', 'r') as file:
+    # this object receive the last e-mail count value
+    last_email_count = int(file.readlines()[-1].strip())
+    file.close()
+
+# oppening the imap server
 mail = imaplib.IMAP4_SSL('imap.gmail.com')
 mail.login('botmailunilink@gmail.com', 'fhpgvqamrqrbpijw')
-mail.select('inbox')
 
-# Buscando o último e-mail
-result, data = mail.search(None, 'ALL')
-latest_email_id = data[0].split()[-1]
-result, data = mail.fetch(latest_email_id, "(RFC822)")
-raw_email = data[0][1]
+# checking currently e-mail count
+mail.select(mailbox='inbox', readonly=True)
+status, count = mail.status('INBOX', "(MESSAGES)")
+total_emails = int(count[0].decode("utf-8").split()[2][:-1])
+mail.mesg_conversion = False
 
-# Decodificando o e-mail
-email_message = email.message_from_bytes(raw_email)
+# If there's new messagens, then proceed : 
+if total_emails > last_email_count:
+    for num in range(last_email_count+1, total_emails+1):
+        result, data = mail.fetch(str(num), '(RFC822)')
+        raw_email = data[0][1]
+        email_message = email.message_from_bytes(raw_email)
 
-# Obtendo informações do e-mail
-sender_email = email.utils.parseaddr(email_message['From'])[1]
-recipient_email = email.utils.parseaddr(email_message['To'])[1]
-subject = email_message['Subject']
+        # Get the sender, subject, and body of the email
+        sender = email.utils.parseaddr(email_message['From'])[1]
+        subject = decode_header(email_message['Subject'])[0][0].decode()
+        body = ''
 
-# Preparando a resposta
-response = MIMEText('Sua mensagem de resposta aqui')
-response['To'] = sender_email
-response['Subject'] = 'Re: ' + subject
-response['In-Reply-To'] = email_message['Message-ID']
-response['References'] = email_message['Message-ID']
+        if email_message.is_multipart():
+            for part in email_message.walk():
+                content_type = part.get_content_type()
+                if content_type == 'text/plain':
+                    body = part.get_payload(decode=True).decode('utf-8')
+        else:
+            body = email_message.get_payload(decode=True).decode('utf-8')
 
-# Enviando a resposta usando SMTP
-smtp = smtplib.SMTP('smtp.gmail.com', 587)
-smtp.ehlo()
-smtp.starttls()
-smtp.login('botmailunilink@gmail.com', 'fhpgvqamrqrbpijw')
-smtp.sendmail(recipient_email, sender_email, response.as_string())
-smtp.quit()
+        # Compose the reply email
+        reply_email = email.message.EmailMessage()
+        reply_email['From'] = 'botmailunilink@gmail.com'
+        reply_email['To'] = sender
+        reply_email['Subject'] = f"Re: {subject}"
+        reply_email['In-Reply-To'] = email_message['Message-ID']
+        reply_email['References'] = email_message['Message-ID']
+
+        reply_email.set_content('Olá, segue pdf no email:')
+        reply_email.make_mixed()
+
+        reply_email.attach(MIMEText('', 'plain'))
+
+        # Encoding PDF file with base64
+        with open('testepy.pdf', 'rb') as pdf_file:
+            pdf_content = pdf_file.read()
+
+        # Creating an object in attach
+        pdf_attachment = MIMEApplication(pdf_content, _subtype='pdf')
+        pdf_attachment.add_header('Content-Disposition', 'attachment', filename='testepy.pdf')
+
+        # Add attachment to email
+        reply_email.attach(pdf_attachment)
+
+        # Send the reply email
+        with smtplib.SMTP('smtp.gmail.com', 587) as smtp_server:
+            smtp_server.starttls()
+            smtp_server.login('botmailunilink@gmail.com', 'fhpgvqamrqrbpijw')
+            smtp_server.send_message(reply_email)
+            smtp_server.quit()
+
+    # Update the log file with the latest email count
+    with open('BotEmail\log.txt', 'a') as log_file:
+        log_file.write(f"{total_emails}\n")
