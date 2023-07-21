@@ -1,14 +1,27 @@
-# BotEmail
-Projeto : Criando um bot para responder emails automaticamente
+##Email Autoresponder and PDF Sender##
+This Python script serves as an email autoresponder and PDF sender, designed to be executed indefinitely. It continuously monitors the inbox, detects new email messages, and sends personalized replies based on specific conditions. Moreover, it can automatically attach a PDF file if the subject of the received email contains the keyword "pdfpath."
 
-This program read the inbox emails with imap lib and create answer with smtp lib. It's up to you how you gonna use it. In my case, i wanted to keep my e-mail answer In-Reply-To, so it attachs my answer with the last one I received. 
+Prerequisites
+Before running the script, ensure you have the following:
 
-There's the option to create conditions to the answers. I used decode and decod to make possible to read and send messages with accent or symbols, what's indispensable for pt-br. Then, the e-mail is splitted by body and subject, what make possible to create the example conditions in line #82.
+Python installed on your system.
+The required Python libraries: os, sys, time, smtplib, imaplib, email, base64, and others. Install them using pip if needed.
+Setup
+Replace the placeholders 'youremail@example.com' and 'yourpassword' with your actual Gmail credentials in two places within the code.
+If you want to include PDF attachments, save the PDF file with the name 'pdfpath.pdf' in the same directory as this script.
+How It Works
+The script constantly monitors the inbox using IMAP over SSL to connect to the Gmail server.
+It reads the 'log.txt' file to determine the last email count that was processed.
+If new messages are found since the last check, the script processes the latest email.
+It extracts the sender's email address, the subject, and the body of the email.
+Depending on the subject's content, the script composes a reply, either with a PDF attachment or a regular response.
+The reply is then sent back to the sender's email address.
+The script updates the 'log.txt' file with the latest email count to keep track of processed emails.
+Usage
+Execute the script using Python.
+The program will run indefinitely, checking for new emails every 5 seconds.
+When a new email arrives, the script will automatically respond according to the conditions specified in the code.
+If the subject contains 'pdfpath', the script will attach the PDF named 'pdfpath.pdf' to the reply.
+Please Note: For security reasons, avoid using actual email addresses and passwords directly in the code. Instead, consider using environment variables or configuration files to store sensitive information.
 
-For my specif need, i add the possibility of send PDF file attachment in e-mail. So, in line #82 you can see the functions needed to make email's body multipart so it can support PDF file.
-
-Comented lines between #25 and #29 are responsible to find log.txt file's path in case you want to use pyinstaller to turn the botapp.py into an .exe file. The pyinstaller combine all the files in same folder and change their paths, so turns out it's necessary to use sys and os libs to find log.txt's path wherever pyinstaller puts that.
-
-it's important to have a log.txt file at same tree as botapp.py, so it can save the information of how many e-mail have been received, what make possible to run the program infinitally, checking how many emails it had, to send or not a new answer.
-
-It's necessary to have the not trust website configuration enabled on e-mail security settings. In addition, it's necessary to enable the IMAP option also in gmail configuration.
+Feel free to explore and customize the script to suit your specific needs! Happy coding!
