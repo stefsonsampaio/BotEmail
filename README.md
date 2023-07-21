@@ -1,4 +1,4 @@
-##Email Autoresponder and PDF Sender##
+Email Autoresponder and PDF Sender
 This Python script serves as an email autoresponder and PDF sender, designed to be executed indefinitely. It continuously monitors the inbox, detects new email messages, and sends personalized replies based on specific conditions. Moreover, it can automatically attach a PDF file if the subject of the received email contains the keyword "pdfpath."
 
 Prerequisites
